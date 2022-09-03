@@ -1,5 +1,5 @@
 #---------------------------------------------------
-# Create AWS RDS instance(s)
+# AWS RDS instance(s)
 #---------------------------------------------------
 resource "aws_db_instance" "db_instance" {
   count = var.enable_db_instance ? var.number_of_instances : 0
@@ -12,7 +12,7 @@ resource "aws_db_instance" "db_instance" {
   instance_class      = var.db_instance_instance_class
   replicate_source_db = var.db_instance_replicate_source_db
 
-  name               = var.db_instance_db_name
+  db_name            = var.db_instance_db_name
   username           = var.db_instance_db_username
   password           = var.db_instance_db_password
   port               = var.db_instance_db_port != null ? var.db_instance_db_port : lookup(var.default_ports, var.db_instance_engine)
@@ -20,9 +20,9 @@ resource "aws_db_instance" "db_instance" {
   timezone           = var.db_instance_timezone
 
   vpc_security_group_ids = var.db_instance_vpc_security_group_ids
-  db_subnet_group_name   = var.db_instance_db_subnet_group_name != "" && ! var.enable_db_subnet_group ? lower(var.db_instance_db_subnet_group_name) : element(concat(aws_db_subnet_group.db_subnet_group.*.id, [""]), 0)
-  parameter_group_name   = var.db_instance_parameter_group_name != "" && ! var.enable_db_parameter_group ? lower(var.db_instance_parameter_group_name) : element(concat(aws_db_parameter_group.db_parameter_group.*.id, [""]), 0)
-  option_group_name      = var.db_instance_option_group_name != "" && ! var.enable_db_option_group ? lower(var.db_instance_option_group_name) : element(concat(aws_db_option_group.db_option_group.*.id, [""]), 0)
+  db_subnet_group_name   = var.db_instance_db_subnet_group_name != "" && !var.enable_db_subnet_group ? lower(var.db_instance_db_subnet_group_name) : element(concat(aws_db_subnet_group.db_subnet_group.*.id, [""]), 0)
+  parameter_group_name   = var.db_instance_parameter_group_name != "" && !var.enable_db_parameter_group ? lower(var.db_instance_parameter_group_name) : element(concat(aws_db_parameter_group.db_parameter_group.*.id, [""]), 0)
+  option_group_name      = var.db_instance_option_group_name != "" && !var.enable_db_option_group ? lower(var.db_instance_option_group_name) : element(concat(aws_db_option_group.db_option_group.*.id, [""]), 0)
 
   publicly_accessible = var.db_instance_publicly_accessible
   multi_az            = var.db_instance_multi_az
@@ -65,6 +65,7 @@ resource "aws_db_instance" "db_instance" {
   dynamic "s3_import" {
     iterator = s3_import
     for_each = var.db_instance_s3_import
+
     content {
       source_engine         = lookup(s3_import.value, "source_engine", null)
       source_engine_version = lookup(s3_import.value, "source_engine_version", null)
@@ -76,7 +77,8 @@ resource "aws_db_instance" "db_instance" {
 
   dynamic "timeouts" {
     iterator = timeouts
-    for_each = var.db_instance_timeouts
+    for_each = length(keys(var.db_instance_timeouts)) > 0 ? [var.db_instance_timeouts] : []
+
     content {
       create = lookup(timeouts.value, "create", null)
       update = lookup(timeouts.value, "update", null)
